@@ -1,0 +1,3 @@
+---
+CSV_DATA_DIR: ~/venv/qstrader/qstrader/data
+OUTPUT_DIR: ~/venv/qstrader/qstrader/out
