@@ -1,26 +1,25 @@
-# coint_bollinger_backtest.py
-
-import datetime 
+import datetime
 
 import click
 import numpy as np
 
 from qstrader import settings
 from qstrader.compat import queue
-from qstrader.price_parser import PriceParser
-from qstrader.price_handler.yahoo_daily_csv_bar import YahooDailyCsvBarPriceHandler
-from qstrader.strategy.base import Strategies
-from qstrader.position_sizer.naive import NaivePositionSizer
-from qstrader.risk_manager.example import ExampleRiskManager
-from qstrader.portfolio_handler import PortfolioHandler
 from qstrader.compliance.example import ExampleCompliance
 from qstrader.execution_handler.ib_simulated import IBSimulatedExecutionHandler
+from qstrader.portfolio_handler import PortfolioHandler
+from qstrader.position_sizer.naive import NaivePositionSizer
+from qstrader.price_handler.yahoo_daily_csv_bar import \
+    YahooDailyCsvBarPriceHandler
+from qstrader.price_parser import PriceParser
+from qstrader.risk_manager.example import ExampleRiskManager
 from qstrader.statistics.tearsheet import TearsheetStatistics
+from qstrader.strategy.base import Strategies
 from qstrader.trading_session import TradingSession
 
 from coint_bollinger_strategy import CointegrationBollingerBandsStrategy
 
-def run(config, testing, tickers, filename):
+def run(config, testing, tickers, filename, lookback, entry_z, exit_z):
 
     # Set up variables needed for backtest
     events_queue = queue.Queue()
@@ -28,15 +27,13 @@ def run(config, testing, tickers, filename):
     initial_equity = PriceParser.parse(500000.00)
 
     # Use Yahoo Daily Price Handler
-    start_date = datetime.datetime(2015, 1, 1)
-    end_date = datetime.datetime(2016, 9, 1)
+    start_date = datetime.datetime(2014, 1, 1)
+    end_date = datetime.datetime(2019, 1, 1)
     price_handler = YahooDailyCsvBarPriceHandler(csv_dir, events_queue, tickers, start_date=start_date, end_date=end_date)
 
     # Use the Cointegration Bollinger Bands trading strategy
     weights = np.array([1.0, -1.213])
     lookback = 15
-    entry_z = 1.5
-    exit_z = 0.5
     base_quantity = 10000
     strategy = CointegrationBollingerBandsStrategy(tickers, events_queue, lookback, weights, entry_z, exit_z, base_quantity)
     strategy = Strategies(strategy)
@@ -80,30 +77,58 @@ def run(config, testing, tickers, filename):
     '--config',
     default=settings.DEFAULT_CONFIG_FILENAME,
     help='Config filename'
-    )
+)
 @click.option(
     '--testing/--no-testing',
     default=False,
     help='Enable testing mode'
-    )
+)
 @click.option(
     '--tickers',
     default='SPY',
     help='Tickers (use comma)'
-    )
+)
 @click.option(
     '--filename',
     default='',
     help='Pickle (.pkl) statistics filename'
-    )
+)
+@click.option(
+    '--lookback',
+    default=[12,18],
+    help='Looback period (use comma)'
+)
+@click.option(
+    '--entry_z',
+    default=[1.5,0.5,11],
+    help='Lookback period (use comma)'
+)
+@click.option(
+    '--exit_z',
+    default=[0.5,0.5,11],
+    help='Lookback period (use comma)'
+)
 
-def main(config, testing, tickers, filename):
+def main(config, testing, tickers, filename, lookback, entry_z, exit_z):
 
-    tickers = tickers.split(",")
     config = settings.from_file(config, testing)
-    run(config, testing, tickers, filename)
+    tickers = tickers.split(",")
+
+    lookback = np.linspace(lookback[0], lookback[1], lookback[1]-lookback[0]+1)
+    entry_range = np.linspace(entry_z[0]-entry_z[1], entry_z[0]+entry_z[1], entry_z[2])
+    exit_range = np.linspace(exit_z[0]-exit_z[1], exit_z[0]+exit_z[1], exit_z[2])
+    print(lookback)
+    print(entry_range)
+    print(exit_range)
+
+    #alter parameters for rolling mean and std
+    for i in lookback:
+        #alter parameters for z-score
+        for j in entry_range:
+            for k in exit_range:
+                run(config, testing, tickers, filename, i, j, k)
+                print(i,j,k)
 
 if __name__ == "__main__":
 
     main()
-
