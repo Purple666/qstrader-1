@@ -28,8 +28,8 @@ def run(config, testing, tickers, filename):
     initial_equity = PriceParser.parse(500000.00)
 
     # Use Yahoo Daily Price Handler
-    start_date = datetime.datetime(2015, 1, 1)
-    end_date = datetime.datetime(2016, 1, 1)
+    start_date = datetime.datetime(2014, 6, 1)
+    end_date = datetime.datetime(2016, 6, 1)
     price_handler = YahooDailyCsvBarPriceHandler(csv_dir, events_queue, tickers, start_date=start_date, end_date=end_date)
 
     # Use the Cointegration Bollinger Bands trading strategy

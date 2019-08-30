@@ -2,6 +2,7 @@ import datetime
 
 import click
 import numpy as np
+import pandas as pd
 
 from qstrader import settings
 from qstrader.compat import queue
@@ -28,14 +29,14 @@ def run(config, testing, tickers, filename, lookback, entry_z, exit_z):
 
     # Use Yahoo Daily Price Handler
     start_date = datetime.datetime(2014, 1, 1)
-    end_date = datetime.datetime(2019, 1, 1)
+    end_date = datetime.datetime(2016, 1, 1)
     price_handler = YahooDailyCsvBarPriceHandler(csv_dir, events_queue, tickers, start_date=start_date, end_date=end_date)
 
     # Use the Cointegration Bollinger Bands trading strategy
     weights = np.array([1.0, -1.213])
     lookback = 15
     base_quantity = 10000
-    strategy = CointegrationBollingerBandsStrategy(tickers, events_queue, lookback, weights, entry_z, exit_z, base_quantity)
+    strategy = CointegrationBollingerBandsStrategy(tickers[1:], events_queue, lookback, weights, entry_z, exit_z, base_quantity)
     strategy = Strategies(strategy)
 
     # Use the Naive Position Sizer
@@ -56,17 +57,17 @@ def run(config, testing, tickers, filename, lookback, entry_z, exit_z):
 
     # Use the Tearsheet Statistics
     title = ["Aluminum Smelting Strategy - ARNC/UNG"]
-    statistics = TearsheetStatistics(config, portfolio_handler, title)
+    statistics = TearsheetStatistics(config, portfolio_handler, title, benchmark=tickers[0])
 
     # Set up the backtest
     backtest = TradingSession(config, strategy, 
-        tickers, initial_equity, start_date, end_date,
+        tickers[1:], initial_equity, start_date, end_date,
         events_queue, price_handler=price_handler,
         portfolio_handler=portfolio_handler, 
         execution_handler=execution_handler, 
         position_sizer=position_sizer, 
         risk_manager=risk_manager, 
-        statistics=statistics)
+        statistics=statistics, benchmark=tickers[0])
 
     results = backtest.start_trading(testing=testing)
     statistics.save(filename)
@@ -95,22 +96,23 @@ def run(config, testing, tickers, filename, lookback, entry_z, exit_z):
 )
 @click.option(
     '--lookback',
-    default=[12,18],
+    default=[14,16],
     help='Looback period (use comma)'
 )
 @click.option(
     '--entry_z',
-    default=[1.5,0.5,11],
+    default=[1.5,0.1,3],
     help='Lookback period (use comma)'
 )
 @click.option(
     '--exit_z',
-    default=[0.5,0.5,11],
+    default=[0.5,0.1,3],
     help='Lookback period (use comma)'
 )
 
 def main(config, testing, tickers, filename, lookback, entry_z, exit_z):
 
+    df = pd.DataFrame()
     config = settings.from_file(config, testing)
     tickers = tickers.split(",")
 
@@ -126,9 +128,13 @@ def main(config, testing, tickers, filename, lookback, entry_z, exit_z):
         #alter parameters for z-score
         for j in entry_range:
             for k in exit_range:
-                run(config, testing, tickers, filename, i, j, k)
-                print(i,j,k)
-
+                trial = run(config, testing, tickers, filename, i, j, k)
+                print(trial.keys())
+                df1 = pd.DataFrame([trial])
+                df1.to_csv("Nice.csv")
+                #df = pd.concat(pd.DataFrame([trial]))
+                #print(df)
+                
 if __name__ == "__main__":
 
     main()
