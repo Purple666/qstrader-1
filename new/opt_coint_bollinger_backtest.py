@@ -123,18 +123,29 @@ def main(config, testing, tickers, filename, lookback, entry_z, exit_z):
     print(entry_range)
     print(exit_range)
 
+    range_list=[]
+    entry_list=[]
+    exit_list=[]
+    sharpe_list=[]
+    alpha_list=[]
+
     #alter parameters for rolling mean and std
     for i in lookback:
         #alter parameters for z-score
         for j in entry_range:
             for k in exit_range:
                 trial = run(config, testing, tickers, filename, i, j, k)
-                print(trial.keys())
-                df1 = pd.DataFrame([trial])
-                df1.to_csv("Nice.csv")
-                #df = pd.concat(pd.DataFrame([trial]))
-                #print(df)
+                range_list.append(i)
+                entry_list.append(j)
+                exit_list.append(k)
+                sharpe_list.append(trial.get('sharpe'))
+                alpha_list.append(trial.get('alpha'))
                 
+    data=[list(i) for i in zip(range_list,entry_list,exit_list,sharpe_list,alpha_list)]
+    df = pd.DataFrame(data,columns=['Range','Entry','Exit','Sharpe','Alpha'])
+    df.to_csv("Nice.csv")
+
+    #print(df)
 if __name__ == "__main__":
 
     main()

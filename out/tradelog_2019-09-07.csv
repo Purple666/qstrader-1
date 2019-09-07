@@ -1,0 +1,3 @@
+timestamp,ticker,action,quantity,exchange,price,commission
+2009-08-05 00:00:00,IEI,SLD,2000,ARCA,109.89,10.0
+2009-08-05 00:00:00,TLT,BOT,2000,ARCA,90.94,10.0
